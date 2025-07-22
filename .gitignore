@@ -1,1 +1,10 @@
 .DS_Store
+.vscode/
+.cursor/
+.fvm/
+.flutter-plugins-dependencies
+.flutter-plugins
+.idea/
+.vscode/
+.cursor/
+.fvm/

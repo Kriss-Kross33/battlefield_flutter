@@ -5,11 +5,14 @@ publish_to: none
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
+  flutter: "3.32.7"
+  
 
 dependencies:
   dart_frog: ^1.1.0
 
 dev_dependencies:
+  dart_frog_cli: ^1.2.5
   mocktail: ^1.0.3
   test: ^1.25.5
   very_good_analysis: ^5.1.0
