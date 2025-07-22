@@ -22,11 +22,24 @@ RUN dart compile exe build/bin/server.dart -o build/bin/server
 
 # Build minimal serving image from AOT-compiled `/server` and required system
 # libraries and configuration files stored in `/runtime/` from the build stage.
-FROM scratch
-COPY --from=build /runtime/ /
-COPY --from=build /app/build/bin/server /app/bin/
-# Uncomment the following line if you are serving static files.
-# COPY --from=build /app/build/public /public/
+FROM alpine:latest
+RUN apk add --no-cache libc6-compat
+
+# Copy the compiled server binary
+COPY --from=build /app/build/bin/server /app/bin/server
+
+# Create a non-root user
+RUN addgroup -g 1001 -S dart && \
+    adduser -S dart -u 1001
+
+# Change ownership of the app directory to the dart user
+RUN chown -R dart:dart /app
+
+# Switch to the dart user
+USER dart
+
+# Expose the port
+EXPOSE 8080
 
 # Start the server.
 CMD ["/app/bin/server"]
