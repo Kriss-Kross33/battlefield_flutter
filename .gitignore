@@ -9,3 +9,4 @@
 .cursor/
 .fvm/
 *.vsix
+.env
