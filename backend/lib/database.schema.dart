@@ -49,5 +49,43 @@ final DatabaseSchema schema = DatabaseSchema.fromMap({
       }
     ],
     "indexes": []
+  },
+  "player_sessions": {
+    "columns": {
+      "id": {
+        "type": "text"
+      },
+      "token": {
+        "type": "text"
+      },
+      "refresh_token": {
+        "type": "text",
+        "isNullable": true
+      },
+      "user_id": {
+        "type": "text"
+      },
+      "expiry_date": {
+        "type": "timestamp"
+      },
+      "refresh_expiry": {
+        "type": "timestamp",
+        "isNullable": true
+      },
+      "created_at": {
+        "type": "timestamp"
+      },
+      "last_refreshed_at": {
+        "type": "timestamp",
+        "isNullable": true
+      }
+    },
+    "constraints": [
+      {
+        "type": "primary_key",
+        "column": "id"
+      }
+    ],
+    "indexes": []
   }
 });
