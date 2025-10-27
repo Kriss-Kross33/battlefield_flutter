@@ -3,16 +3,26 @@ import 'package:backend/repositories/session_repository.dart';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:stormberry/stormberry.dart';
 
+import '../../db/postgresql/_middleware.dart';
+
 Handler middleware(Handler handler) {
-  return (context) async {
-    const sessionRepository = SessionRepository();
-    final db = context.read<Database>();
-    final playerRepository = PlayerRepository(db: db);
-    handler
-        .use(requestLogger())
-        .use(provider<SessionRepository>((_) => sessionRepository))
-        .use(provider<PlayerRepository>((_) => playerRepository));
-    final response = handler(context);
-    return response;
-  };
+  return handler
+      .use(requestLogger())
+      .use(
+        provider<PlayerRepository>(
+          (context) {
+            final db = context.read<Database>();
+            return PlayerRepository(db: db);
+          },
+        ),
+      )
+      .use(provider<Database>((_) => db))
+      .use(
+        provider<SessionRepository>(
+          (context) {
+            final db = context.read<Database>();
+            return SessionRepository(db: db);
+          },
+        ),
+      );
 }

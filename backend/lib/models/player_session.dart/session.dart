@@ -1,19 +1,31 @@
-import 'package:equatable/equatable.dart';
+import 'package:stormberry/stormberry.dart';
+
+part 'session.schema.dart';
 
 /// {@template session}
 /// Represents a user session.
 /// {@endtemplate}
-class PlayerSession extends Equatable {
+@Model()
+abstract class PlayerSession {
   /// {@macro session}
   const PlayerSession({
+    required this.id,
     required this.token,
     required this.userId,
     required this.expiryDate,
     required this.createdAt,
+    this.refreshExpiry,
+    this.lastRefreshedAt,
+    this.refreshToken,
   });
+
+  @PrimaryKey()
+  final String id;
 
   /// The session token.
   final String token;
+
+  final String? refreshToken;
 
   /// The user id.
   final String userId;
@@ -21,9 +33,10 @@ class PlayerSession extends Equatable {
   /// The session expiry date.
   final DateTime expiryDate;
 
+  final DateTime? refreshExpiry;
+
   /// The session creation date.
   final DateTime createdAt;
 
-  @override
-  List<Object?> get props => [token, userId, expiryDate, createdAt];
+  final DateTime? lastRefreshedAt;
 }

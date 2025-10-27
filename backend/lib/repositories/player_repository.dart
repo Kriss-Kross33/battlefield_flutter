@@ -4,23 +4,7 @@ import 'package:backend/exceptions/exceptions.dart';
 import 'package:backend/models/player/player.dart';
 import 'package:crypto/crypto.dart';
 import 'package:stormberry/stormberry.dart';
-import 'package:talker/talker.dart';
 import 'package:uuid/uuid.dart';
-
-final talker = Talker(
-  settings: TalkerSettings(
-    colors: {
-      TalkerKey.info: AnsiPen()..magenta(),
-      // YourCustomKey.logKey: AnsiPen()..green(),
-    },
-    titles: {
-      TalkerKey.exception: 'Whatever you want',
-      TalkerKey.error: 'E',
-      TalkerKey.info: 'i',
-      // YourCustomKey.logKey: 'Custom',
-    },
-  ),
-);
 
 /// {@template player_repository}
 ///
@@ -111,7 +95,7 @@ class PlayerRepository {
     required String password,
     required String hashedPassword,
   }) {
-    final hashedInput = hashPassword(password);
-    return hashedInput == hashedPassword;
+    // final hashedInput = hashPassword(password);
+    return password == hashedPassword;
   }
 }
