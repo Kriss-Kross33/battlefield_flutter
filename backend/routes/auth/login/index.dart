@@ -19,8 +19,6 @@ Future<Response> _post(RequestContext context) async {
   }
   final requestFields = jsonDecode(requestBody) as Map<String, dynamic>?;
 
-  final playerRepository = context.read<PlayerRepository>();
-
   final email = requestFields!['email'] as String?;
   final password = requestFields['password'] as String?;
 
@@ -30,19 +28,27 @@ Future<Response> _post(RequestContext context) async {
       body: {'details': 'Email and Password fields are required'},
     );
   }
-  final player =
-      await playerRepository.loginPlayer(email: email, password: password);
+  final player = await context
+      .read<PlayerRepository>()
+      .loginPlayer(email: email, password: password);
   if (player == null) {
     return Response.json(
       statusCode: HttpStatus.unauthorized,
-      body: {'details': 'Email and Password fields are required'},
+      body: {'details': 'User with provided credentials does not exist'},
     );
   }
   final session = context.read<SessionRepository>();
-  final createdSession = await session.createSession(userId: player.id);
+  final createdSession =
+      await session.createSessionWithRefreshToken(userId: player.id);
   final body = {
-    'access_token': createdSession.token,
+    'user_id': createdSession.userId,
+    'access_token': createdSession.accessToken,
+    'refresh_token': createdSession.refreshToken,
     'messsage': 'success',
+    'access_token_expires_in':
+        createdSession.accessTokenExpiry.toIso8601String(),
+    'refresh_token_expires_in':
+        createdSession.refreshTokenExpiry.toIso8601String(),
   };
-  return Future.value(Response.json(body: body));
+  return Response.json(body: body);
 }
