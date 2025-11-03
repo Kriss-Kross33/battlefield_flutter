@@ -188,11 +188,11 @@ class Glicko2 {
         rating: this.createRating(mu: r.mu, phi: r.phi, sigma: r.sigma),
       );
     }
-    double variance = 1 / varianceInv;
-    double diff = diffSum / varianceInv;
+    final variance = 1 / varianceInv;
+    final delta = variance * diffSum;
     final sigmaPrime = this.determineSigma(
       rating: r,
-      diff: diff,
+      diff: delta,
       variance: variance,
     );
     final phiStar = math.sqrt(
@@ -201,7 +201,7 @@ class Glicko2 {
     final phiPrime =
         1.0 /
         math.sqrt((1.0 / math.pow(phiStar, 2).toDouble()) + (1.0 / variance));
-    final muPrime = r.mu + math.pow(phiPrime, 2).toDouble() * diff / variance;
+    final muPrime = r.mu + math.pow(phiPrime, 2).toDouble() * delta / variance;
     return this.scaleUp(
       rating: this.createRating(mu: muPrime, phi: phiPrime, sigma: sigmaPrime),
     );
