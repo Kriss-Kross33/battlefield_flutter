@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:backend/repositories/leadership_board.dart';
+import 'package:dart_glicko2/dart_glicko2.dart';
 
 /// {@template match_maker}
 /// A class for finding opponents for a player based on their rating
@@ -26,10 +29,9 @@ class MatchMaker {
       return null;
     }
     others.sort(
-      (a, b) => (a.value.mu - player.mu)
-          .abs()
-          .compareTo(b.value.mu - player.mu)
-          .abs(),
+      (a, b) => matchQuality(player, b.value).compareTo(
+        matchQuality(player, a.value),
+      ),
     );
     // Optionally ensure RD difference isn't too high.
     final best = others.firstWhere(
@@ -37,5 +39,11 @@ class MatchMaker {
       orElse: () => others.first,
     );
     return best.key;
+  }
+
+  double matchQuality(Rating a, Rating b) {
+    final g = 1 / math.sqrt(1 + 3 * math.pow(b.phi, 2) / math.pow(math.pi, 2));
+    final E = 1 / (1 + math.exp(-g * (a.mu - b.mu)));
+    return 1 - (E - 0.5).abs() * 2;
   }
 }
