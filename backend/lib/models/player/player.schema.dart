@@ -46,8 +46,8 @@ class _PlayerRepository extends BaseRepository
     var values = QueryValues();
     await db.execute(
       Sql.named(
-        'INSERT INTO "players" ( "id", "username", "email", "avatar_url", "score", "wins", "losses", "streak", "password" )\n'
-        'VALUES ${requests.map((r) => '( ${values.add(r.id)}:text, ${values.add(r.username)}:text, ${values.add(r.email)}:text, ${values.add(r.avatarUrl)}:text, ${r.score != null ? '${values.add(r.score)}:int8' : 'DEFAULT'}, ${r.wins != null ? '${values.add(r.wins)}:int8' : 'DEFAULT'}, ${r.losses != null ? '${values.add(r.losses)}:int8' : 'DEFAULT'}, ${r.streak != null ? '${values.add(r.streak)}:int8' : 'DEFAULT'}, ${r.password != null ? '${values.add(r.password)}:text' : 'DEFAULT'} )').join(', ')}\n',
+        'INSERT INTO "players" ( "id", "username", "email", "avatar_url", "score", "wins", "losses", "streak", "password", "rating" )\n'
+        'VALUES ${requests.map((r) => '( ${values.add(r.id)}:text, ${values.add(r.username)}:text, ${values.add(r.email)}:text, ${values.add(r.avatarUrl)}:text, ${r.score != null ? '${values.add(r.score)}:int8' : 'DEFAULT'}, ${r.wins != null ? '${values.add(r.wins)}:int8' : 'DEFAULT'}, ${r.losses != null ? '${values.add(r.losses)}:int8' : 'DEFAULT'}, ${r.streak != null ? '${values.add(r.streak)}:int8' : 'DEFAULT'}, ${r.password != null ? '${values.add(r.password)}:text' : 'DEFAULT'}, ${values.add(RatingConverter().tryEncode(r.rating))}:text )').join(', ')}\n',
       ),
       parameters: values.values,
     );
@@ -66,7 +66,8 @@ class _PlayerRepository extends BaseRepository
             r.wins != null ||
             r.losses != null ||
             r.streak != null ||
-            r.password != null)
+            r.password != null ||
+            r.rating != null)
           r,
     ];
 
@@ -75,9 +76,9 @@ class _PlayerRepository extends BaseRepository
       await db.execute(
         Sql.named(
           'UPDATE "players"\n'
-          'SET "username" = COALESCE(UPDATED."username", "players"."username"), "email" = COALESCE(UPDATED."email", "players"."email"), "avatar_url" = COALESCE(UPDATED."avatar_url", "players"."avatar_url"), "score" = COALESCE(UPDATED."score", "players"."score"), "wins" = COALESCE(UPDATED."wins", "players"."wins"), "losses" = COALESCE(UPDATED."losses", "players"."losses"), "streak" = COALESCE(UPDATED."streak", "players"."streak"), "password" = COALESCE(UPDATED."password", "players"."password")\n'
-          'FROM ( VALUES ${updateRequests.map((r) => '( ${values.add(r.id)}:text::text, ${values.add(r.username)}:text::text, ${values.add(r.email)}:text::text, ${values.add(r.avatarUrl)}:text::text, ${values.add(r.score)}:int8::int8, ${values.add(r.wins)}:int8::int8, ${values.add(r.losses)}:int8::int8, ${values.add(r.streak)}:int8::int8, ${values.add(r.password)}:text::text )').join(', ')} )\n'
-          'AS UPDATED("id", "username", "email", "avatar_url", "score", "wins", "losses", "streak", "password")\n'
+          'SET "username" = COALESCE(UPDATED."username", "players"."username"), "email" = COALESCE(UPDATED."email", "players"."email"), "avatar_url" = COALESCE(UPDATED."avatar_url", "players"."avatar_url"), "score" = COALESCE(UPDATED."score", "players"."score"), "wins" = COALESCE(UPDATED."wins", "players"."wins"), "losses" = COALESCE(UPDATED."losses", "players"."losses"), "streak" = COALESCE(UPDATED."streak", "players"."streak"), "password" = COALESCE(UPDATED."password", "players"."password"), "rating" = COALESCE(UPDATED."rating", "players"."rating")\n'
+          'FROM ( VALUES ${updateRequests.map((r) => '( ${values.add(r.id)}:text::text, ${values.add(r.username)}:text::text, ${values.add(r.email)}:text::text, ${values.add(r.avatarUrl)}:text::text, ${values.add(r.score)}:int8::int8, ${values.add(r.wins)}:int8::int8, ${values.add(r.losses)}:int8::int8, ${values.add(r.streak)}:int8::int8, ${values.add(r.password)}:text::text, ${values.add(RatingConverter().tryEncode(r.rating))}:text::text )').join(', ')} )\n'
+          'AS UPDATED("id", "username", "email", "avatar_url", "score", "wins", "losses", "streak", "password", "rating")\n'
           'WHERE "players"."id" = UPDATED."id"',
         ),
         parameters: values.values,
@@ -97,6 +98,7 @@ class PlayerInsertRequest {
     this.losses,
     this.streak,
     this.password,
+    this.rating,
   });
 
   final String id;
@@ -108,6 +110,7 @@ class PlayerInsertRequest {
   final int? losses;
   final int? streak;
   final String? password;
+  final Rating? rating;
 }
 
 class PlayerUpdateRequest {
@@ -121,6 +124,7 @@ class PlayerUpdateRequest {
     this.losses,
     this.streak,
     this.password,
+    this.rating,
   });
 
   final String id;
@@ -132,6 +136,7 @@ class PlayerUpdateRequest {
   final int? losses;
   final int? streak;
   final String? password;
+  final Rating? rating;
 }
 
 class PlayerViewQueryable extends KeyedViewQueryable<PlayerView, String> {
@@ -160,6 +165,7 @@ class PlayerViewQueryable extends KeyedViewQueryable<PlayerView, String> {
     losses: map.get('losses'),
     streak: map.get('streak'),
     password: map.get('password'),
+    rating: map.getOpt('rating', RatingConverter().decode),
   );
 }
 
@@ -174,6 +180,7 @@ class PlayerView {
     required this.losses,
     required this.streak,
     required this.password,
+    this.rating,
   });
 
   final String id;
@@ -185,4 +192,5 @@ class PlayerView {
   final int losses;
   final int streak;
   final String password;
+  final Rating? rating;
 }

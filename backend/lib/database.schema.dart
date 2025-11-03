@@ -40,6 +40,10 @@ final DatabaseSchema schema = DatabaseSchema.fromMap({
       "password": {
         "type": "text",
         "default": "0"
+      },
+      "rating": {
+        "type": "text",
+        "isNullable": true
       }
     },
     "constraints": [
