@@ -1,0 +1,8 @@
+name: dart_glicko2
+description: A dart implementation of glicko2
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: '^3.9.0'
+
