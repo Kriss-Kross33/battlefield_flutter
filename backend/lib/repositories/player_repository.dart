@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:backend/exceptions/exceptions.dart';
 import 'package:backend/models/player/player.dart';
 import 'package:crypto/crypto.dart';
+import 'package:dart_glicko2/dart_glicko2.dart';
 import 'package:stormberry/stormberry.dart';
 import 'package:uuid/uuid.dart';
 
@@ -72,6 +73,7 @@ class PlayerRepository {
         email: email,
         password: hashedPassword,
         username: username,
+        rating: const Rating(),
       ),
     );
     final user = await _db.players.queryPlayer(userId);
