@@ -4,6 +4,7 @@ import 'package:backend/models/player/player.dart';
 /// Extension to convert a PlayerView to a JSON object.
 /// {@endtemplate}
 extension PlayerViewJson on PlayerView {
+  ///
   Map<String, dynamic> toJson() {
     return {
       'id': id,
