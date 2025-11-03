@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:backend/exceptions/custom_exceptions.dart';
 import 'package:dart_glicko2/dart_glicko2.dart';
 import 'package:stormberry/stormberry.dart';
 
@@ -32,6 +33,11 @@ class LeadershipBoard {
     required String playerB,
     bool drawn = false,
   }) {
+    if (!_players.containsKey(playerA) || !_players.containsKey(playerB)) {
+      throw const PlayerNotFoundException(
+        message: 'One or both players are not found on the leadership board',
+      );
+    }
     final (updatedA, updatedB) = _engine.rate1v1(
       playerA: _players[playerA]!,
       playerB: _players[playerB]!,
@@ -57,6 +63,21 @@ class LeadershipBoard {
       final entry = top.elementAt(i);
       print('${i + 1}. ${entry.key}: ${entry.value.mu.toStringAsFixed(2)}');
     }
+  }
+
+  ///
+  List<Map<String, dynamic>> topPlayers([int n = 10]) {
+    return sortedPlayers
+        .take(n)
+        .map(
+          (e) => {
+            'id': e.key,
+            'rating': e.value.mu,
+            'phi': e.value.phi,
+            'sigma': e.value.sigma,
+          },
+        )
+        .toList();
   }
 
   ///
