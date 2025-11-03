@@ -10,3 +10,4 @@
 .fvm/
 *.vsix
 .env
+.dart_tool/
