@@ -119,6 +119,23 @@ class SessionRepository {
     }
   }
 
+  /// Queries the DB and returns a session by [token]
+  ///
+  /// if the is no session returned from the db or the session has
+  /// expired the method returns `null`.
+  Future<PlayerSessionView?> getSessionFromToken(String token) async {
+    final sessions = await _db.playerSessions.queryPlayerSessions(
+      QueryParams(
+        where: 'token=@token',
+        values: {'token': token},
+      ),
+    );
+    if (sessions.isEmpty || sessions.first.expiryDate.isAfter(_now())) {
+      return null;
+    }
+    return sessions.first;
+  }
+
   /// Verify the token
   void verifyToken(String token) {
     try {
