@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:backend/repositories/leadership_board.dart';
+import 'package:backend/repositories/leadership_board_repository.dart';
 import 'package:dart_glicko2/dart_glicko2.dart';
 
 /// {@template match_maker}
@@ -8,10 +8,10 @@ import 'package:dart_glicko2/dart_glicko2.dart';
 /// {@endtemplate}
 class MatchMaker {
   /// {@macro match_maker}
-  MatchMaker({required this.leadershipBoard, this.maxRD = 100.0});
+  MatchMaker({required this.repository, this.maxRD = 100.0});
 
   /// The leadership board to use for finding opponents
-  final LeadershipBoard leadershipBoard;
+  final LeadershipBoardRepository repository;
 
   /// The maximum allowed rating deviation difference
   final double maxRD; // optional: maximum allowed rating deviation difference
@@ -19,11 +19,10 @@ class MatchMaker {
   /// Find an opponent for the player with the given [playerId]
   /// Returns the ID of the opponent if found, otherwise null
   String? findOpponent(String playerId) {
-    final player = leadershipBoard.players[playerId];
+    final player = repository.players[playerId];
     if (player == null) return null;
-    final others = leadershipBoard.players.entries
-        .where((e) => e.key != playerId)
-        .toList();
+    final others =
+        repository.players.entries.where((e) => e.key != playerId).toList();
     if (others.isEmpty) {
       print('No more players in the db');
       return null;
