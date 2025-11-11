@@ -2,17 +2,18 @@ import 'dart:convert';
 
 import 'package:backend/exceptions/exceptions.dart';
 import 'package:backend/models/player/player.dart';
+import 'package:backend/utils/utils.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dart_glicko2/dart_glicko2.dart';
 import 'package:stormberry/stormberry.dart';
 import 'package:uuid/uuid.dart';
 
-/// {@template player_repository}
+/// {@template battle_field_player_repository}
 ///
 /// {@endtemplate}
-class PlayerRepository {
-  /// {@macro player_repository}
-  const PlayerRepository({required Database db}) : _db = db;
+class BattleFieldPlayerRepository {
+  /// {@macro battle_field_player_repository}
+  const BattleFieldPlayerRepository({required Database db}) : _db = db;
   final Database _db;
 
   /// Login the player with the [email] and [password].
@@ -78,6 +79,16 @@ class PlayerRepository {
     );
     final user = await _db.players.queryPlayer(userId);
     return user;
+  }
+
+  /// Fetches the user from the database by [id]
+  Future<PlayerView?> getPlayerById(String? id) async {
+    if (id == null) {
+      return null;
+    }
+    final player = await _db.players.queryPlayer(id);
+    talker.debug('PLAYER ID: ${player?.id}');
+    return player;
   }
 
   ///
