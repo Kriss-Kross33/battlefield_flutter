@@ -6,9 +6,9 @@ import '../../db/postgresql/_middleware.dart';
 
 Handler middleware(Handler handler) {
   return handler.use(requestLogger()).use(provider<Database>((_) => db)).use(
-    provider<PlayerRepository>((context) {
+    provider<BattleFieldPlayerRepository>((context) {
       final db = context.read<Database>();
-      return PlayerRepository(db: db);
+      return BattleFieldPlayerRepository(db: db);
     }),
   );
 }

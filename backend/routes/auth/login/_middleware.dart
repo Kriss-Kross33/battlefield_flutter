@@ -9,10 +9,10 @@ Handler middleware(Handler handler) {
   return handler
       .use(requestLogger())
       .use(
-        provider<PlayerRepository>(
+        provider<BattleFieldPlayerRepository>(
           (context) {
             final db = context.read<Database>();
-            return PlayerRepository(db: db);
+            return BattleFieldPlayerRepository(db: db);
           },
         ),
       )
