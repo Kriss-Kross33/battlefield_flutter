@@ -11,3 +11,5 @@
 *.vsix
 .env
 .dart_tool/
+.cursorindexingignore
+.specstory/history/
