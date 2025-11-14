@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "73844230479",
+    "project_id": "battlefield-flutter",
+    "storage_bucket": "battlefield-flutter.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:73844230479:android:864bcee2b52f4f3cff5d3a",
+        "android_client_info": {
+          "package_name": "com.example.basic"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvMfzB1-IZCPRAY3aoa_y9nn3OhhM0Vn4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
