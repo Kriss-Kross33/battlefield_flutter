@@ -67,3 +67,17 @@ class SessionExpiredException implements Exception {
   @override
   String toString() => message;
 }
+
+/// {@template session_expired_exception}
+/// Exception thrown when the error is not known.
+/// {@endtemplate}
+class UnkownException implements Exception {
+  /// {@macro session_expired_exception}
+  const UnkownException({required this.message});
+
+  /// The message of the exception
+  final String message;
+
+  @override
+  String toString() => message;
+}

@@ -36,7 +36,7 @@ Future<Response> _post(RequestContext context) async {
     );
   } else {
     try {
-      final playerRepository = context.read<PlayerRepository>();
+      final playerRepository = context.read<BattleFieldPlayerRepository>();
       final email = requestFields['email'] as String;
       final password = requestFields['password'] as String;
       final username = requestFields['username'] as String;

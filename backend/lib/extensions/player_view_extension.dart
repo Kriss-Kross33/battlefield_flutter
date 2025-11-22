@@ -14,6 +14,7 @@ extension PlayerViewJson on PlayerView {
       'wins': wins,
       'losses': losses,
       'streak': streak,
+      'rating': rating?.toJson(),
     };
   }
 }

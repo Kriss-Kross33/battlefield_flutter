@@ -75,30 +75,30 @@ class SessionRepository {
     }
   }
 
-  /// Get a session by its token
-  Future<PlayerSessionView?> getSessionByToken(String token) async {
-    final sessions = await _db.playerSessions.queryPlayerSessions(
-      QueryParams(
-        where: 'token=@token',
-        values: {'token': token},
-      ),
-    );
+  // /// Get a session by its token
+  // Future<PlayerSessionView?> getSessionByToken(String token) async {
+  //   final sessions = await _db.playerSessions.queryPlayerSessions(
+  //     QueryParams(
+  //       where: 'token=@token',
+  //       values: {'token': token},
+  //     ),
+  //   );
 
-    if (sessions.isEmpty) return null;
+  //   if (sessions.isEmpty) return null;
 
-    final session = sessions.first;
+  //   final session = sessions.first;
 
-    // Check if session has expired
-    if (session.expiryDate.isBefore(_now())) {
-      return null;
-    }
+  //   // Check if session has expired
+  //   if (session.expiryDate.isBefore(_now())) {
+  //     return null;
+  //   }
 
-    return session;
-  }
+  //   return session;
+  // }
 
   /// Delete a session by its token
   Future<void> deleteSession(String token) async {
-    final session = await getSessionByToken(token);
+    final session = await getSessionFromToken(token);
     if (session != null) {
       await _db.playerSessions.deleteOne(session.id);
     }
@@ -117,6 +117,23 @@ class SessionRepository {
     for (final session in expiredSessions) {
       await _db.playerSessions.deleteOne(session.id);
     }
+  }
+
+  /// Queries the DB and returns a session by [token]
+  ///
+  /// if the is no session returned from the db or the session has
+  /// expired the method returns `null`.
+  Future<PlayerSessionView?> getSessionFromToken(String token) async {
+    final sessions = await _db.playerSessions.queryPlayerSessions(
+      QueryParams(
+        where: 'token=@token',
+        values: {'token': token},
+      ),
+    );
+    if (sessions.isEmpty || sessions.first.expiryDate.isAfter(_now())) {
+      return null;
+    }
+    return sessions.first;
   }
 
   /// Verify the token
