@@ -4,10 +4,13 @@
 
 import 'dart:math';
 
-import 'package:basic/core/constants/image_constants.dart';
+import 'package:basic/common/common.dart';
 import 'package:flutter/material.dart';
 
 import '../level_selection/levels.dart';
+
+part 'widgets/grid_painter.dart';
+part 'widgets/snap_grid_board.dart';
 
 /// This widget defines the entirety of the screen that the player sees when
 /// they are playing a level.
@@ -25,328 +28,43 @@ class PlaySessionScreen extends StatefulWidget {
 class _PlaySessionScreenState extends State<PlaySessionScreen> {
   static const grid = 10;
 
-  // Palette pieces (consumable: removed only after successful drop)
-  final List<Piece> palette = [
-    const Piece(id: 'P1', rows: 1, cols: 5, shipPath: ImageConstants.carrier),
-    const Piece(id: 'P2', rows: 1, cols: 4, shipPath: ImageConstants.frigate),
-    const Piece(id: 'P3', rows: 1, cols: 4, shipPath: ImageConstants.frigate),
-    const Piece(
-      id: 'P4',
-      rows: 1,
-      cols: 3,
-      shipPath: ImageConstants.submarine,
-    ),
-    const Piece(
-      id: 'P5',
-      rows: 1,
-      cols: 3,
-      shipPath: ImageConstants.submarine,
-    ),
-    const Piece(
-      id: 'P6',
-      rows: 1,
-      cols: 2,
-      shipPath: ImageConstants.patrolBoat,
-    ),
-    const Piece(
-      id: 'P7',
-      rows: 1,
-      cols: 2,
-      shipPath: ImageConstants.patrolBoat,
-    ),
-    const Piece(
-      id: 'P8',
-      rows: 1,
-      cols: 2,
-      shipPath: ImageConstants.patrolBoat,
-    ),
-    const Piece(
-      id: 'P9',
-      rows: 1,
-      cols: 2,
-      shipPath: ImageConstants.patrolBoat,
-    ),
-  ];
-
   // Board pieces: id -> placement
   final Map<String, PlacedPiece> piecesOnBoard = {};
 
-  // Hover highlight state
-  int? _hoverRow, _hoverCol;
-  int _hoverRows = 1, _hoverCols = 1;
-  bool _hoverValid = false;
-
   // Selection state
-  String? _selectedId;
+  String? selectedId;
   bool enforceNoAdjacency = false;
   // Cache board cell size for sizing the off-grid pieces (palette)
   double? _cellSize;
 
-  void _clearHover() {
-    _hoverRow = _hoverCol = null;
-    _hoverRows = _hoverCols = 1;
-    _hoverValid = false;
-  }
-
-  // Key to get the exact board RenderBox for precise local coordinates
-  final GlobalKey _boardKey = GlobalKey();
+  // Key not required in parent after refactor; board owns it
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Snap-to-Grid Board')),
+      appBar: AppBar(
+        title: const Text('Snap-to-Grid Board'),
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: [
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, c) {
-                  final size = min(c.maxWidth, c.maxHeight);
-                  final cell = size / grid;
-                  _cellSize = cell;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 20),
-                    child: SizedBox(
-                      key: _boardKey,
-                      width: size,
-                      height: size,
-                      child: Stack(
-                        children: [
-                          // Grid
-                          CustomPaint(
-                              size: Size(size, size),
-                              painter: _GridPainter(grid: grid)),
-
-                          // Hover highlight overlay
-                          if (_hoverRow != null && _hoverCol != null)
-                            Positioned(
-                              left: _hoverCol! * cell,
-                              top: _hoverRow! * cell,
-                              width: _hoverCols * cell,
-                              height: _hoverRows * cell,
-                              child: IgnorePointer(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: (_hoverValid
-                                            ? Colors.green
-                                            : Colors.red)
-                                        .withValues(alpha: .25),
-                                    border: Border.all(
-                                      color: _hoverValid
-                                          ? Colors.green
-                                          : Colors.red,
-                                      width: 2,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                          // Selected piece highlight overlay
-                          if (_selectedId != null &&
-                              piecesOnBoard.containsKey(_selectedId))
-                            Builder(builder: (_) {
-                              final placed = piecesOnBoard[_selectedId]!;
-                              final dims = _effectiveSize(placed);
-                              return Positioned(
-                                left: placed.col * cell,
-                                top: placed.row * cell,
-                                width: dims.$2 * cell,
-                                height: dims.$1 * cell,
-                                child: IgnorePointer(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.blueAccent
-                                          .withValues(alpha: .12),
-                                      border: Border.all(
-                                        color: Colors.blueAccent,
-                                        width: 2,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }),
-
-                          // Board-wide DragTarget to compute snap and accept moves/placements
-                          Positioned.fill(
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.translucent,
-                              onTap: () {
-                                if (_selectedId != null) {
-                                  setState(() => _selectedId = null);
-                                }
-                              },
-                              child: DragTarget<_BoardDrag>(
-                                builder: (context, cand, rej) =>
-                                    const SizedBox.shrink(),
-                                onWillAcceptWithDetails: (details) {
-                                  final local = _local(details.offset, context);
-                                  final p = details.data;
-                                  final (r, cIdx) = _snapTopLeft(
-                                      local.$1, local.$2, cell, p.cols, p.rows);
-                                  final ok = _fitsAndFree(
-                                      r, cIdx, p.rows, p.cols, p.movingId);
-                                  setState(() {
-                                    _hoverRow = r;
-                                    _hoverCol = cIdx;
-                                    _hoverRows = p.rows;
-                                    _hoverCols = p.cols;
-                                    _hoverValid = ok;
-                                  });
-                                  return ok;
-                                },
-                                onMove: (details) {
-                                  final local = _local(details.offset, context);
-                                  final p = details.data;
-                                  final (r, cIdx) = _snapTopLeft(
-                                      local.$1, local.$2, cell, p.cols, p.rows);
-                                  final ok = _fitsAndFree(
-                                      r, cIdx, p.rows, p.cols, p.movingId);
-                                  setState(() {
-                                    _hoverRow = r;
-                                    _hoverCol = cIdx;
-                                    _hoverRows = p.rows;
-                                    _hoverCols = p.cols;
-                                    _hoverValid = ok;
-                                  });
-                                },
-                                onLeave: (_) {
-                                  setState(_clearHover);
-                                },
-                                onAcceptWithDetails: (details) {
-                                  final local = _local(details.offset, context);
-                                  final p = details.data;
-                                  final (r, cIdx) = _snapTopLeft(
-                                      local.$1, local.$2, cell, p.cols, p.rows);
-
-                                  setState(() {
-                                    _clearHover();
-                                    if (p.paletteId != null) {
-                                      // Consume palette item and place it
-                                      final id = p.paletteId!;
-                                      final srcIndex =
-                                          palette.indexWhere((e) => e.id == id);
-                                      final src = palette[srcIndex];
-                                      palette.removeAt(srcIndex);
-                                      piecesOnBoard[id] = PlacedPiece(
-                                        piece: Piece(
-                                          id: id,
-                                          rows: p.rows,
-                                          cols: p.cols,
-                                          shipPath: src.shipPath,
-                                          shipPathVertical:
-                                              src.shipPathVertical,
-                                        ),
-                                        row: r,
-                                        col: cIdx,
-                                        shipPath: src.shipPath,
-                                        originalIndex: srcIndex,
-                                      );
-                                      // Initialize stable center pivot at placement
-                                      final pr = p.rows.toDouble();
-                                      final pc = p.cols.toDouble();
-                                      piecesOnBoard[id]!.pivotRow =
-                                          r + (pr - 1) / 2.0;
-                                      piecesOnBoard[id]!.pivotCol =
-                                          cIdx + (pc - 1) / 2.0;
-                                    } else if (p.movingId != null) {
-                                      // Move existing board piece
-                                      final placed = piecesOnBoard[p.movingId]!;
-                                      placed.row = r;
-                                      placed.col = cIdx;
-                                      // Update pivot to new position (using current orientation)
-                                      final eff = _effectiveSize(placed);
-                                      placed.pivotRow =
-                                          placed.row + (eff.$1 - 1) / 2.0;
-                                      placed.pivotCol =
-                                          placed.col + (eff.$2 - 1) / 2.0;
-                                    }
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-
-                          // Render existing board pieces
-                          ...piecesOnBoard.entries.map((e) {
-                            final id = e.key;
-                            final placed = e.value;
-                            final dims = _effectiveSize(placed);
-                            return Positioned(
-                              key: ValueKey('piece-$id'),
-                              left: placed.col * cell,
-                              top: placed.row * cell,
-                              width: dims.$2 * cell,
-                              height: dims.$1 * cell,
-                              child: Draggable<_BoardDrag>(
-                                key: ValueKey('drag-$id'),
-                                data: _BoardDrag.move(id, dims.$1, dims.$2),
-                                dragAnchorStrategy: pointerDragAnchorStrategy,
-                                onDragStarted: () {
-                                  if (_selectedId != null) {
-                                    setState(() => _selectedId = null);
-                                  }
-                                },
-                                feedback: Material(
-                                  child: RepaintBoundary(
-                                    child: SizedBox(
-                                      width: dims.$2 * cell,
-                                      height: dims.$1 * cell,
-                                      child: RotatedBox(
-                                        quarterTurns:
-                                            placed.rotationQuarterTurns % 4,
-                                        child: Container(
-                                          color: Colors.green,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                childWhenDragging: const SizedBox.shrink(),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedId =
-                                          _selectedId == id ? null : id;
-                                    });
-                                  },
-                                  onLongPress: () {
-                                    setState(() {
-                                      _selectedId = id;
-                                    });
-                                  },
-                                  onDoubleTap: () =>
-                                      _rotateSelected(clockwise: true),
-                                  child: SizedBox(
-                                    width: dims.$2 * cell,
-                                    height: dims.$1 * cell,
-                                    child: RotatedBox(
-                                      quarterTurns:
-                                          placed.rotationQuarterTurns % 4,
-                                      child: Container(
-                                          color: Colors.blue,
-                                          child: Center(
-                                              child: Text(
-                                            placed.piece.id,
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ))),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-                  );
+              child: _SnapGridBoard(
+                grid: grid,
+                piecesOnBoard: piecesOnBoard,
+                selectedId: selectedId,
+                enforceNoAdjacency: enforceNoAdjacency,
+                consumePalettePiece: (id) {
+                  final idx = palette.indexWhere((e) => e.id == id);
+                  if (idx == -1) return null;
+                  Piece? removed;
+                  setState(() {
+                    removed = palette.removeAt(idx);
+                  });
+                  return removed;
                 },
+                onSelect: (id) => setState(() => selectedId = id),
               ),
             ),
 
@@ -367,7 +85,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
                   final id = data.movingId!;
                   final placed = piecesOnBoard.remove(id);
                   if (placed != null) {
-                    if (_selectedId == id) _selectedId = null;
+                    if (selectedId == id) selectedId = null;
                     final insertAt = placed.originalIndex ?? palette.length;
                     final safeIndex = insertAt.clamp(0, palette.length);
                     palette.insert(
@@ -386,7 +104,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
             ),
 
             // Rotation controls for selected piece
-            if (_selectedId != null)
+            if (selectedId != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Row(
@@ -438,7 +156,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
 
   // Rotate selected piece with collision/bounds checks
   void _rotateSelected({required bool clockwise}) {
-    final id = _selectedId;
+    final id = selectedId;
     if (id == null) return;
     final placed = piecesOnBoard[id];
     if (placed == null) return;
@@ -535,22 +253,6 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
     );
   }
 
-  // Convert a global drop offset to local coordinates inside the board
-  (double, double) _local(Offset global, BuildContext ctx) {
-    final box = _boardKey.currentContext!.findRenderObject() as RenderBox;
-    final p = box.globalToLocal(global);
-    return (p.dx, p.dy);
-  }
-
-  // Snap pixel coordinates to top-left cell, clamped to fit piece size
-  (int, int) _snapTopLeft(double x, double y, double cell, int cols, int rows) {
-    final rawCol = (x / cell).floor();
-    final rawRow = (y / cell).floor();
-    final col = rawCol.clamp(0, grid - cols);
-    final row = rawRow.clamp(0, grid - rows);
-    return (row, col);
-  }
-
   // Battleship fit check: disallow overlap and adjacency (1-cell margin)
   bool _fitsAndFree(int r, int c, int rows, int cols, String? movingId) {
     if (r + rows > grid || c + cols > grid) return false;
@@ -600,41 +302,6 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
 
 // Data models
 
-class Piece {
-  final String id;
-  final int rows;
-  final int cols;
-  final String shipPath;
-  final String? shipPathVertical;
-  const Piece({
-    required this.id,
-    required this.shipPath,
-    this.shipPathVertical,
-    this.rows = 1,
-    this.cols = 1,
-  });
-}
-
-class PlacedPiece {
-  final Piece piece;
-  int row;
-  int col;
-  String shipPath;
-  int? originalIndex;
-  int rotationQuarterTurns = 0;
-  // Stable pivot (center) in grid coordinates to avoid rotation drift
-  double pivotRow = 0;
-  double pivotCol = 0;
-  // Cumulative turn count for smooth tweening without wraparounds
-  double animTurns = 0.0;
-  PlacedPiece(
-      {required this.piece,
-      required this.shipPath,
-      required this.row,
-      required this.col,
-      this.originalIndex});
-}
-
 // Drag payload describing either a move or a placement from palette
 class _BoardDrag {
   final String? movingId; // id of an existing board piece being moved
@@ -651,24 +318,3 @@ class _BoardDrag {
 }
 
 // Grid painter
-
-class _GridPainter extends CustomPainter {
-  final int grid;
-  _GridPainter({required this.grid});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.grey.shade400
-      ..strokeWidth = 1;
-    final cell = size.width / grid;
-    for (int i = 0; i <= grid; i++) {
-      final o = i * cell;
-      canvas.drawLine(Offset(o, 0), Offset(o, size.height), paint);
-      canvas.drawLine(Offset(0, o), Offset(size.width, o), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
