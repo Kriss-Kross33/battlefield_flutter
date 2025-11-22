@@ -29,7 +29,7 @@ class MainMenuScreen extends StatelessWidget {
           child: Transform.rotate(
             angle: -0.1,
             child: const Text(
-              'Flutter Game Template!',
+              'Flutter Battleship!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Permanent Marker',
