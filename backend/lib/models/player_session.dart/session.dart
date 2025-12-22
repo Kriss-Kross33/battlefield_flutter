@@ -19,12 +19,14 @@ abstract class PlayerSession {
     this.refreshToken,
   });
 
+  /// The player session id.
   @PrimaryKey()
   final String id;
 
   /// The session token.
   final String token;
 
+  /// The refresh token
   final String? refreshToken;
 
   /// The user id.
@@ -33,10 +35,12 @@ abstract class PlayerSession {
   /// The session expiry date.
   final DateTime expiryDate;
 
+  /// The refresh token expiry
   final DateTime? refreshExpiry;
 
   /// The session creation date.
   final DateTime createdAt;
 
+  /// The last refresh time
   final DateTime? lastRefreshedAt;
 }
