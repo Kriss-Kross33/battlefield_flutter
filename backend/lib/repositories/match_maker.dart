@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:backend/repositories/leadership_board_repository.dart';
+import 'package:backend/utils/utils.dart';
 import 'package:dart_glicko2/dart_glicko2.dart';
 
 /// {@template match_maker}
@@ -24,7 +25,7 @@ class MatchMaker {
     final others =
         repository.players.entries.where((e) => e.key != playerId).toList();
     if (others.isEmpty) {
-      print('No more players in the db');
+      talker.warning('No more players in the db');
       return null;
     }
     others.sort(
@@ -40,6 +41,7 @@ class MatchMaker {
     return best.key;
   }
 
+  ///
   double matchQuality(Rating a, Rating b) {
     final g = 1 / math.sqrt(1 + 3 * math.pow(b.phi, 2) / math.pow(math.pi, 2));
     final E = 1 / (1 + math.exp(-g * (a.mu - b.mu)));
