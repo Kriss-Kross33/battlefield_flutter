@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:backend/exceptions/custom_exceptions.dart';
 import 'package:backend/models/player/player.dart';
+import 'package:backend/utils/talker.dart';
 import 'package:dart_glicko2/dart_glicko2.dart';
 import 'package:stormberry/stormberry.dart';
 
@@ -63,6 +64,7 @@ class LeadershipBoardRepository {
     _players[playerB] = updatedB;
   }
 
+  ///
   Map<String, Rating> get players => _players;
 
   // List<MapEntry<String, Rating>> get sortedPlayers {
@@ -82,10 +84,10 @@ class LeadershipBoardRepository {
   Future<void> showTop([int n = 10]) async {
     final players = await sortedPlayers;
     final top = players.take(n).toList();
-    print('\n🏆 LEADERBOARD 🏆');
+    talker.debug('\n🏆 LEADERBOARD 🏆');
     for (var i = 0; i < top.length; i++) {
       final entry = top.elementAt(i);
-      print(
+      talker.debug(
         '${i + 1}. ${entry.username}: ${entry.rating!.mu.toStringAsFixed(2)}',
       );
     }
