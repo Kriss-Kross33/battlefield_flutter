@@ -18,7 +18,8 @@ class PlayerEntity extends Equatable {
   });
 
   /// convert json to Player object
-  // factory Player.fromJson(Map<String, dynamic> json) => _$PlayerFromJson(json);
+  // factory Player.fromJson(Map<String, dynamic> json)
+  // => _$PlayerFromJson(json);
 
   final String id;
 
