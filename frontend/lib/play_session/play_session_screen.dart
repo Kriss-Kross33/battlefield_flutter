@@ -5,6 +5,7 @@
 import 'dart:math';
 
 import 'package:basic/common/common.dart';
+import 'package:basic/core/utils/utils.dart';
 import 'package:flutter/material.dart';
 
 import '../level_selection/levels.dart';
@@ -39,12 +40,49 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
 
   // Key not required in parent after refactor; board owns it
 
+  // Working palette (mutable copy of canonical)
+  late List<Piece> palette;
+
+  // Canonical palette (no asset dependency required; shipPath optional)
+  static const List<Piece> kDefaultPalette = [
+    Piece(id: 'P1', rows: 1, cols: 5, shipPath: ''),
+    Piece(id: 'P2', rows: 1, cols: 4, shipPath: ''),
+    Piece(id: 'P3', rows: 1, cols: 4, shipPath: ''),
+    Piece(id: 'P4', rows: 1, cols: 3, shipPath: ''),
+    Piece(id: 'P5', rows: 1, cols: 3, shipPath: ''),
+    Piece(id: 'P6', rows: 1, cols: 2, shipPath: ''),
+    Piece(id: 'P7', rows: 1, cols: 2, shipPath: ''),
+    Piece(id: 'P8', rows: 1, cols: 2, shipPath: ''),
+    Piece(id: 'P9', rows: 1, cols: 2, shipPath: ''),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _resetBoard();
+  }
+
+  void _resetBoard() {
+    piecesOnBoard.clear();
+    selectedId = null;
+    // deep-copy canonical palette so we can mutate the working list safely
+    palette = kDefaultPalette
+        .map(
+          (p) => Piece(
+            id: p.id,
+            rows: p.rows,
+            cols: p.cols,
+            shipPath: p.shipPath,
+            shipPathVertical: p.shipPathVertical,
+          ),
+        )
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Snap-to-Grid Board'),
-      ),
+      appBar: AppBar(title: const Text('Snap-to-Grid Board')),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -55,6 +93,12 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
                 piecesOnBoard: piecesOnBoard,
                 selectedId: selectedId,
                 enforceNoAdjacency: enforceNoAdjacency,
+                onCellTap: (cell) {
+                  debugPrint('CELL TAPPED: ${cell.row} ${cell.col}');
+                },
+                onPieceChange: (cells) {
+                  // use cells map here
+                },
                 consumePalettePiece: (id) {
                   final idx = palette.indexWhere((e) => e.id == id);
                   if (idx == -1) return null;
@@ -87,6 +131,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
                   if (placed != null) {
                     if (selectedId == id) selectedId = null;
                     final insertAt = placed.originalIndex ?? palette.length;
+
                     final safeIndex = insertAt.clamp(0, palette.length);
                     palette.insert(
                       safeIndex,
@@ -144,15 +189,15 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
     );
   }
 
-  // Compute effective size (rows, cols) after rotation
-  (int, int) _effectiveSize(PlacedPiece placed) {
-    // Ships are 1-cell thick; length is max(rows, cols)
-    final odd = (placed.rotationQuarterTurns % 2) != 0;
-    final length = max(placed.piece.rows, placed.piece.cols);
-    final rows = odd ? length : 1;
-    final cols = odd ? 1 : length;
-    return (rows, cols);
-  }
+  // // Compute effective size (rows, cols) after rotation
+  // (int, int) _effectiveSize(PlacedPiece placed) {
+  //   // Ships are 1-cell thick; length is max(rows, cols)
+  //   final odd = (placed.rotationQuarterTurns % 2) != 0;
+  //   final length = max(placed.piece.rows, placed.piece.cols);
+  //   final rows = odd ? length : 1;
+  //   final cols = odd ? 1 : length;
+  //   return (rows, cols);
+  // }
 
   // Rotate selected piece with collision/bounds checks
   void _rotateSelected({required bool clockwise}) {
@@ -192,6 +237,11 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
       placed.row = newRow;
       placed.col = newCol;
     });
+    final cells = [
+      for (final c in GridBoardHelper.occupiedCells(placed))
+        '(row:${c.row}, col:${c.col})',
+    ];
+    debugPrint('rotate: COMMIT id=$id -> cells: ${cells.join(', ')}');
   }
 
   Widget _buildPalette(double cell) {
@@ -226,19 +276,21 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
           ),
           childWhenDragging: const SizedBox.shrink(),
           child: SizedBox(
-              width: w,
-              height: h,
-              child: Container(
-                color: Colors.green,
-                child: Center(
-                    child: Text(
+            width: w,
+            height: h,
+            child: Container(
+              color: Colors.green,
+              child: Center(
+                child: Text(
                   piece.id,
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
-                )),
-              )),
+                ),
+              ),
+            ),
+          ),
         ),
       );
     }
@@ -258,11 +310,15 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
     if (r + rows > grid || c + cols > grid) return false;
 
     final a = Rect.fromLTWH(
-        c.toDouble(), r.toDouble(), cols.toDouble(), rows.toDouble());
+      c.toDouble(),
+      r.toDouble(),
+      cols.toDouble(),
+      rows.toDouble(),
+    );
     for (final entry in piecesOnBoard.entries) {
       if (entry.key == movingId) continue;
       final p = entry.value;
-      final eff = _effectiveSize(p);
+      final eff = GridBoardHelper.effectiveSize(p);
       Rect b;
       if (enforceNoAdjacency) {
         // Expand existing ship rect by 1 cell margin to enforce no-adjacency
